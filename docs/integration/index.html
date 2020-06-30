@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0"><meta property="og:title" content="Integration" />
 <meta property="og:description" content="Set up Compayer To start collecting data from your client:
-Step 1. Create or sign in to your Compayer account to get:
- CLIENT_ID (the unique identifier for your client) SECRET_KEY (the secret API key for your client)  Step 2. Follow the instruction to send events from your client to Compayer:
+Step 1. Set up your client settings Create or sign in to your Compayer account to get:
+ CLIENT_ID (the unique identifier for your client) SECRET_KEY (the secret API key for your client)  Step 2. Send data to Compayer Follow the instruction to send events from your client to Compayer:
 Compayer PHP SDK library is designed to push stat messages to the Compayer analytics from the php-based projects." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://docs.stg.compayer.com/docs/integration/" />
@@ -14,8 +14,8 @@ Compayer PHP SDK library is designed to push stat messages to the Compayer analy
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Integration"/>
 <meta name="twitter:description" content="Set up Compayer To start collecting data from your client:
-Step 1. Create or sign in to your Compayer account to get:
- CLIENT_ID (the unique identifier for your client) SECRET_KEY (the secret API key for your client)  Step 2. Follow the instruction to send events from your client to Compayer:
+Step 1. Set up your client settings Create or sign in to your Compayer account to get:
+ CLIENT_ID (the unique identifier for your client) SECRET_KEY (the secret API key for your client)  Step 2. Send data to Compayer Follow the instruction to send events from your client to Compayer:
 Compayer PHP SDK library is designed to push stat messages to the Compayer analytics from the php-based projects."/>
 <title>Integration | Compayer Documentation</title>
 <link rel="icon" href="/favicon.png" type="image/x-icon">
@@ -24,7 +24,7 @@ Compayer PHP SDK library is designed to push stat messages to the Compayer analy
 <link rel="stylesheet" href="/book.min.343270af3f7a01683d94762f9b671c6eb940933f3238c66b6bfc99821e7a3131.css" integrity="sha256-NDJwrz96AWg9lHYvm2ccbrlAkz8yOMZra/yZgh56MTE=">
 
 
-<script defer src="/search.min.9f294429f948943da2cae4761500c1357553e50f59a553aaaeb23256254e03de.js" integrity="sha256-nylEKflIlD2iyuR2FQDBNXVT5Q9ZpVOqrrIyViVOA94="></script>
+<script defer src="/search.min.6c02e54b80cd83479bb0c9c94c7823e5fc0c62fc6b091745106d8418b020307b.js" integrity="sha256-bALlS4DNg0ebsMnJTHgj5fwMYvxrCRdFEG2EGLAgMHs="></script>
 
 <script type="application/javascript">
 var doNotTrack = false;
@@ -109,14 +109,18 @@ https://github.com/alex-shpak/hugo-book
 
 <p>To start collecting data from your client:</p>
 
-<p><strong>Step 1.</strong> Create or sign in to your Compayer account to get:</p>
+<h2 id="step-1-set-up-your-client-settings"><strong>Step 1.</strong> Set up your client settings</h2>
+
+<p>Create or sign in to your Compayer account to get:</p>
 
 <ul>
 <li>CLIENT_ID (the unique identifier for your client)</li>
 <li>SECRET_KEY (the secret API key for your client)</li>
 </ul>
 
-<p><strong>Step 2.</strong> Follow the instruction to send events from your client to Compayer:</p>
+<h2 id="step-2-send-data-to-compayer"><strong>Step 2.</strong> Send data to Compayer</h2>
+
+<p>Follow the instruction to send events from your client to Compayer:</p>
 
 <p><a href="https://github.com/compayer/compayer-lib-php">Compayer PHP SDK</a> library is designed to push stat messages to the Compayer analytics from the php-based projects.</p>
 
@@ -125,12 +129,22 @@ https://github.com/alex-shpak/hugo-book
 $client = new Client($config);</code></pre></div>
 <p><strong>Create an instance of the Event class and set properties about a user and payment:</strong></p>
 
+<blockquote class="book-hint info">
+  The Event tries automatically determine the user IP address and address of the payment initiation page based on the data from the server request. If the user’s request is not available to the script, you can set the payment initiation page or user IP address by yourself (this is necessary for the geolocation filters to work correctly).
+</blockquote>
+
+
 <p>All fields are optional, but it&rsquo;s important to fill out one of the fields: <code>userEmails</code>, <code>userPhones</code> or <code>userAccounts</code> to identify the user made the payment.</p>
 
 <p>You can set custom properties about a user or payment using <code>setExtra(['my_property' =&gt; 'value'])</code>.</p>
 
 <pre><code>$event = (new Event())
     -&gt;setMerchantTransactionId('12345')
+    -&gt;setPaymentAmount(250.50)
+    -&gt;setPaymentCurrency('RUB')
+    -&gt;setUserLang('RUS')
+    -&gt;setUserEmails(['customer@compayer.com'])
+    -&gt;setUserAccounts(['54321'])
     -&gt;setExtra(['my_property' =&gt; 'value']);
 </code></pre>
 
@@ -139,7 +153,23 @@ $client = new Client($config);</code></pre></div>
 <pre><code>$response = $client-&gt;pushStartEvent($event);
 </code></pre>
 
-<p><strong>Sample code to send the Event <code>start</code>:</strong></p>
+<p><strong>Get the transaction ID to chain events:</strong></p>
+
+<p>The transaction identifier is a UUID string like <em>3677eb06-1a9a-4b6c-9d6a-1799cae1b6bb</em>.</p>
+
+<pre><code>$transactionId = $response-&gt;getTransactionId();
+</code></pre>
+
+<p><strong>Send the Event <code>success</code> (<code>fail</code> or <code>refund</code>) after the payment system responds about the result of the operation:</strong></p>
+
+<pre><code>$client-&gt;pushSuccessEvent($event);
+
+$client-&gt;pushFailEvent($event)
+
+$client-&gt;pushRefundEvent($event)
+</code></pre>
+
+<h2 id="sample-code-of-the-event-start">Sample code of the Event <code>start</code></h2>
 <div class="highlight"><pre style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-php" data-lang="php">use Compayer\SDK\Client;
 use Compayer\SDK\Config;
 use Compayer\SDK\Event;
@@ -169,12 +199,46 @@ try {
     print_r($e-&gt;getMessage());
 }
 
-// Use this sample code to send &#34;success&#34;, &#34;fail&#34; or &#34;refund&#34; events and to chain events.
-// The transaction identifier is UUID string like 3677eb06-1a9a-4b6c-9d6a-1799cae1b6bb.
 $transactionId = $response-&gt;getTransactionId();
 
-// Show logs with the debug mode configuration.
 print_r($response-&gt;getLog());</code></pre></div>
+<h2 id="sample-code-of-the-event-success">Sample code of the Event <code>success</code></h2>
+
+<pre><code>use Compayer\SDK\Client;
+use Compayer\SDK\Config;
+use Compayer\SDK\Event;
+use Compayer\SDK\Exceptions\SdkException;
+
+const CLIENT_ID = 'client_id';
+const SECRET_KEY = 'secret_key';
+
+$config = new Config(CLIENT_ID, SECRET_KEY);
+$config-&gt;setDebugMode(true);
+
+$client = new Client($config);
+
+// The transaction ID received on the start event
+$transactionId = '3677eb06-1a9a-4b6c-9d6a-1799cae1b6bb';
+
+$event = (new Event())
+    -&gt;setTransactionId($transactionId)
+    -&gt;setMerchantTransactionId('12345')
+    -&gt;setPaymentAmount(250.50)
+    -&gt;setPaymentCurrency('RUB')
+    -&gt;setPayoutAmount(3.87)
+    -&gt;setPayoutCurrency('USD')
+    -&gt;setUserEmails(['customer@compayer.com'])
+    -&gt;setUserAccounts(['54321'])
+    -&gt;setExtra(['my_property' =&gt; 'value'])
+    -&gt;setPaymentSystemResponse('Payment system response as a string');
+
+try {
+    $client-&gt;pushSuccessEvent($event);
+} catch (SdkException $e) {
+    print_r($e-&gt;getMessage());
+}
+</code></pre>
+
 <hr />
 
 <h2 id="questions">Questions?</h2>
@@ -221,7 +285,13 @@ If you want something very special and crazy custom yet don&rsquo;t have a suita
   <aside class="book-toc level-3 fixed">
     <nav id="TableOfContents">
 <ul>
-<li><a href="#set-up-compayer">Set up Compayer</a></li>
+<li><a href="#set-up-compayer">Set up Compayer</a>
+<ul>
+<li><a href="#step-1-set-up-your-client-settings"><strong>Step 1.</strong> Set up your client settings</a></li>
+<li><a href="#step-2-send-data-to-compayer"><strong>Step 2.</strong> Send data to Compayer</a></li>
+<li><a href="#sample-code-of-the-event-start">Sample code of the Event <code>start</code></a></li>
+<li><a href="#sample-code-of-the-event-success">Sample code of the Event <code>success</code></a></li>
+</ul></li>
 </ul>
 </nav>
   </aside>
